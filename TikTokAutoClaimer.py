@@ -1,4 +1,4 @@
-import requests , threading , os , ctypes , random
+import requests , threading , os , ctypes , random , urllib3
 from colorama import Fore , init
 init(autoreset=True)
 class SystemThread:
@@ -18,6 +18,7 @@ class TikTok:
         self.yellow = Fore.LIGHTYELLOW_EX
         self.magenta = Fore.LIGHTMAGENTA_EX
         self.N = 0
+        self.request_urllib3 = urllib3.PoolManager()
     def http_request(self, url, headers, data=None, post=None, get=None, proxies=None):
         if post:
             if data:
@@ -30,8 +31,13 @@ class TikTok:
                     pass
             elif not proxies:
                 return requests.get(url, headers=headers)
+    def http_request_use_urllib3(self, url, headers, data=None):
+        if data:
+            return self.request_urllib3.request('POST', url, headers=headers, body=data).data.decode('utf-8')
+        elif not data:
+            return self.request_urllib3.request('GET', url, headers=headers).data.decode('utf-8')
     def check_sessionid(self):
-        self.req_check_sessionid = self.http_request('https://api2.musical.ly/aweme/v1/commit/user/?version_code=7.7.0&language=ar&app_name=musical_ly&carrier_region=SA&channel=App%20Store&device_id=7042527263909070342&sys_region=SA&aid=1233&os_version=14.2&app_language=en&device_platform=iphone&device_type=iPhone10,6&iid=7057913854278108934', {'Host': 'api2.musical.ly', 'Cookie': f'sessionid={self.sessionid}', 'Accept': '*/*', 'Connection': 'close', 'Content-Type': 'application/x-www-form-urlencoded User-Agent: Musically/7.7.0 (iPhone; iOS 14.2; Scale/3.00)'}, {'unique_id': 'ff'}, True, False, False).text
+        self.req_check_sessionid = self.http_request_use_urllib3('https://api.tiktokv.com/aweme/v1/commit/user/?os_api=25&device_type=ASUS_Z01QD&carrier_region=SA&region=SA&app_name=trill_go&version_name=3.8.1&channel=googleplay&device_platform=android&iid=7059144303172306689&version_code=381&device_id=7053828810593060358&sys_region=US&app_language=en&device_brand=Asus&language=en&os_version=7.1.2&aid=1339', {'Host': 'api.tiktokv.com', 'Cookie': f'sessionid={self.sessionid}', 'User-Agent': 'okhttp/3.10.0.2', 'Content-Type': 'application/x-www-form-urlencoded', 'Connection': 'close'}, 'unique_id=ss')
         if '"status_code": 2091' in self.req_check_sessionid:
             print(f'[{self.green}+{self.reset}] Not 30 day')
         elif '"status_code": 2070' in self.req_check_sessionid:
@@ -85,20 +91,19 @@ class TikTok:
                 self.req_check_target = self.http_request(f'https://www.tiktok.com/@{self.random_target_user}', {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, False, False, True, True)
                 if self.req_check_target.status_code == 200 and f'"uniqueId":"{self.random_target_user}"' in self.req_check_target.text and self.N == 0:
                     self.attempts +=1
-                    ctypes.windll.kernel32.SetConsoleTitleW(str(f"\rAttempts > [{self.attempts}] | Target > @{self.random_target_user}"))
-                    print(f'\r[+] Attempts : {self.attempts}', end='')
+                    ctypes.windll.kernel32.SetConsoleTitleW(str("\rAttempts > [{:,}] | Target > @{}".format(self.attempts, self.random_target_user)))
                 elif self.req_check_target.status_code == 404 and self.N == 0:
-                    self.req_swap = self.http_request('https://api2.musical.ly/aweme/v1/commit/user/?version_code=7.7.0&language=ar&app_name=musical_ly&carrier_region=SA&channel=App%20Store&device_id=7042527263909070342&sys_region=SA&aid=1233&os_version=14.2&app_language=en&device_platform=iphone&device_type=iPhone10,6&iid=7057913854278108934', {'Host': 'api2.musical.ly', 'Cookie': f'sessionid={self.sessionid}', 'Accept': '*/*', 'Connection': 'close', 'Content-Type': 'application/x-www-form-urlencoded User-Agent: Musically/7.7.0 (iPhone; iOS 14.2; Scale/3.00)'}, {'unique_id': self.random_target_user}, True, False, False).text
+                    self.req_swap = self.http_request_use_urllib3('https://api.tiktokv.com/aweme/v1/commit/user/?os_api=25&device_type=ASUS_Z01QD&carrier_region=SA&region=SA&app_name=trill_go&version_name=3.8.1&channel=googleplay&device_platform=android&iid=7059144303172306689&version_code=381&device_id=7053828810593060358&sys_region=US&app_language=en&device_brand=Asus&language=en&os_version=7.1.2&aid=1339', {'Host': 'api.tiktokv.com', 'Cookie': f'sessionid={self.sessionid}', 'User-Agent': 'okhttp/3.10.0.2', 'Content-Type': 'application/x-www-form-urlencoded', 'Connection': 'close'}, f'unique_id={self.random_target_user}')
                     if 'unique_id' in self.req_swap and self.N == 0:
                         self.N = 1
-                        print(f'\n[{self.green}+{self.reset}] Successfully Claimed : @{self.random_target_user}')
+                        print(f'[{self.green}+{self.reset}] Successfully Claimed : @{self.random_target_user}')
                         input()
                         exit(0)
                     elif '"status_code": 2091' in self.req_swap and self.N == 0:
-                        print(f'\n[{self.red}+{self.reset}] Failed To Claim @{self.random_target_user}')
+                        print(f'[{self.red}+{self.reset}] Failed To Claim @{self.random_target_user}')
                     else:
                         if self.N == 0:
-                            print(f'\n[{self.red}+{self.reset}] Error')
+                            print(f'[{self.red}+{self.reset}] Error')
             except:
                 pass
     def claim_target(self):
@@ -107,20 +112,19 @@ class TikTok:
                 self.req_check_target = self.http_request(f'https://www.tiktok.com/@{self.target}', {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}, False, False, True, True)
                 if self.req_check_target.status_code == 200 and f'"uniqueId":"{self.target}"' in self.req_check_target.text and self.N == 0:
                     self.attempts +=1
-                    ctypes.windll.kernel32.SetConsoleTitleW(str(f"\rAttempts > [{self.attempts}] | Target > @{self.target}"))
-                    print(f'\r[+] Attempts : {self.attempts}', end='')
+                    ctypes.windll.kernel32.SetConsoleTitleW(str("\rAttempts > [{:,}]".format(self.attempts)))
                 elif self.req_check_target.status_code == 404 and self.N == 0:
-                    self.req_swap = self.http_request('https://api2.musical.ly/aweme/v1/commit/user/?version_code=7.7.0&language=ar&app_name=musical_ly&carrier_region=SA&channel=App%20Store&device_id=7042527263909070342&sys_region=SA&aid=1233&os_version=14.2&app_language=en&device_platform=iphone&device_type=iPhone10,6&iid=7057913854278108934', {'Host': 'api2.musical.ly', 'Cookie': f'sessionid={self.sessionid}', 'Accept': '*/*', 'Connection': 'close', 'Content-Type': 'application/x-www-form-urlencoded User-Agent: Musically/7.7.0 (iPhone; iOS 14.2; Scale/3.00)'}, {'unique_id': self.target}, True, False, False).text
+                    self.req_swap = self.http_request_use_urllib3('https://api.tiktokv.com/aweme/v1/commit/user/?os_api=25&device_type=ASUS_Z01QD&carrier_region=SA&region=SA&app_name=trill_go&version_name=3.8.1&channel=googleplay&device_platform=android&iid=7059144303172306689&version_code=381&device_id=7053828810593060358&sys_region=US&app_language=en&device_brand=Asus&language=en&os_version=7.1.2&aid=1339', {'Host': 'api.tiktokv.com', 'Cookie': f'sessionid={self.sessionid}', 'User-Agent': 'okhttp/3.10.0.2', 'Content-Type': 'application/x-www-form-urlencoded', 'Connection': 'close'}, f'unique_id={self.target}')
                     if 'unique_id' in self.req_swap and self.N == 0:
                         self.N = 1
-                        print(f'\n[{self.green}+{self.reset}] Successfully Claimed : @{self.target}')
+                        print(f'[{self.green}+{self.reset}] Successfully Claimed : @{self.target}')
                         input()
                         exit(0)
                     elif '"status_code": 2091' in self.req_swap and self.N == 0:
-                        print(f'\n[{self.red}+{self.reset}] Failed To Claim @{self.target}')
+                        print(f'[{self.red}+{self.reset}] Failed To Claim @{self.target}')
                     else:
                         if self.N == 0:
-                            print(f'\n[{self.red}+{self.reset}] Error')
+                            print(f'[{self.red}+{self.reset}] Error')
             except:
                 pass
 if __name__ == '__main__':
